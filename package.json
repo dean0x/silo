@@ -1,0 +1,51 @@
+{
+  "name": "@dean0x/silo",
+  "version": "1.0.0",
+  "description": "OS-enforced secret protection for macOS — prevents coding agents from silently accessing production credentials",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "silo": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "security",
+    "keychain",
+    "macos",
+    "secrets",
+    "ai-agents",
+    "coding-agents",
+    "prompt-injection",
+    "credential-protection"
+  ],
+  "author": "dean0x",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dean0x/silo"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin"
+  ],
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "typescript": "^5.7.0"
+  }
+}
