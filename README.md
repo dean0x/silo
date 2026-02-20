@@ -1,4 +1,4 @@
-# @dean0x/silo
+# Silo
 
 OS-enforced secret protection for macOS. Prevents AI coding agents from silently accessing your production credentials.
 
