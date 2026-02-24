@@ -81,25 +81,41 @@ export function createKeychain(
 }
 
 /**
- * Unlock the keychain via terminal prompt.
+ * Unlock the keychain via a native macOS password dialog.
  *
- * Chains unlock + set-keychain-settings in a single shell
- * command so there's no gap for the keychain to re-lock
- * between calls. One terminal prompt, then the timeout
- * change happens in the same session.
+ * Uses `osascript` to show a GUI prompt instead of reading from
+ * stdin, which fails in non-TTY environments (IDE terminals,
+ * agent SDKs, CI) where stdin is a pipe — EOF is treated as an
+ * empty password. The OS-level dialog is the security gate.
  */
 export function unlockKeychain(config: SiloConfig): Result<void> {
   const path = keychainPath(config.service);
 
   try {
-    execFileSync('/bin/sh', [
-      '-c',
-      `security unlock-keychain "${path}"` +
-        ` && security set-keychain-settings -t 10 -l "${path}"`,
-    ], { stdio: 'inherit' });
+    const password = execFileSync('/usr/bin/osascript', [
+      '-e',
+      'set pw to text returned of (display dialog' +
+        ` "Enter password for ${config.service} keychain"` +
+        ' default answer "" with hidden answer' +
+        ' with title "Silo")',
+      '-e',
+      'return pw',
+    ], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+
+    execFileSync('/usr/bin/security',
+      ['unlock-keychain', '-p', password, path],
+      { stdio: 'pipe' },
+    );
+    execFileSync('/usr/bin/security',
+      ['set-keychain-settings', '-t', '10', '-l', path],
+      { stdio: 'pipe' },
+    );
     return { ok: true, value: undefined };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('User canceled') || msg.includes('-128')) {
+      return { ok: false, error: 'Keychain unlock cancelled by user' };
+    }
     return {
       ok: false,
       error: `Failed to unlock keychain: ${msg}`,
